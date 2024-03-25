@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
      return 1;
    }
 
-   struct sockaddr_in server_addr{};
+   struct sockaddr_in server_addr;
    server_addr.sin_family = AF_INET;
    server_addr.sin_addr.s_addr = INADDR_ANY;
    server_addr.sin_port = htons(6379);
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
      return 1;
    }
 
-   struct sockaddr_in client_addr{};
+   struct sockaddr_in client_addr;
    int client_addr_len = sizeof(client_addr);
 
    std::cout << "Waiting for a client to connect...\n";
