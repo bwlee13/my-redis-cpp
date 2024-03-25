@@ -48,6 +48,24 @@ int main(int argc, char **argv) {
 
    int client = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
    std::cout << "Client connected\n";
+   
+   const char *pong = "+PONG\r\n";
+   
+   while (true) {
+       char read_buffer[1024];
+       ssize_t bytes_received = recv(client, read_buffer, sizeof(read_buffer), 0);
+       if (bytes_received < 0) {
+           std::cerr << "Error receiving data from client \n";
+           break;
+       } else if (bytes_received == 0) {
+           std::cerr << "Connection closed by client \n";
+           break;
+       } else {
+           // Send back PONG every time
+           send(client, pong, strlen(pong), 0);
+       }
+   }
+           
 
    char buffer[1024] = {0};
    read(client, buffer, 1024);
