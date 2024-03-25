@@ -13,21 +13,17 @@
 const int PORT = 6379;
 
 void handle_conn(int client_fd) {
-    char read_buffer[1024] = {0};
+    char read_buffer[1024];
     const char *pong = "+PONG\r\n";
 
     while (true) {
         ssize_t bytes_received = recv(client_fd, read_buffer, sizeof(read_buffer), 0);
-        if (bytes_received < 0) {
-            std::cerr << "Error receiving data from client \n";
+        if (bytes_received <= 0) {
+            std::cerr << "Client disconnected or read error \n";
             break;
-        } else if (bytes_received == 0) {
-            std::cerr << "Connection closed by client \n";
-            break;
-        } else {
-            // Send back PONG every time
-            send(client_fd, pong, strlen(pong), 0);
         }
+        // Send back PONG every time
+        send(client_fd, pong, strlen(pong), 0);
     }
     close(client_fd);
 }
@@ -82,12 +78,13 @@ int main(int argc, char **argv) {
        std::thread th1(handle_conn, client_fd);
        threads.push_back(std::move(th1));
        std::cout << "End of single connection loop " << std::endl;
-
-       for (auto &th: threads) {
-           th.join();
-       }
-       std::cout << "End of global loop " << std::endl;
    }
+
+    for (auto &th: threads) {
+        th.join();
+    }
+
+    std::cout << "End of global loop " << std::endl;
 
     close(server_fd);
     return 0;
