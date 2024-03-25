@@ -11,22 +11,9 @@
 #include <vector>
 
 const int PORT = 6379;
-
-void handle_conn(int client_fd) {
-    char read_buffer[1024];
-    const char *pong = "+PONG\r\n";
-
-    while (true) {
-        ssize_t bytes_received = recv(client_fd, read_buffer, sizeof(read_buffer), 0);
-        if (bytes_received <= 0) {
-            std::cerr << "Client disconnected or read error \n";
-            break;
-        }
-        // Send back PONG every time
-        send(client_fd, pong, strlen(pong), 0);
-    }
-    close(client_fd);
-}
+//std::ostream& writeString(std::ostream& out, std::string const& s);
+void handle_conn(int client_fd);
+std::vector<std::string> splitRedisCommand(std::string input, std::string separator, int separatorLength);
 
 int main(int argc, char **argv) {
 
@@ -83,4 +70,62 @@ int main(int argc, char **argv) {
     close(server_fd);
 
     return 0;
+}
+
+
+void handle_conn(int client_fd) {
+    char read_buffer[1024];
+    const char *pong = "+PONG\r\n";
+
+    while (true) {
+        ssize_t bytes_received = recv(client_fd, read_buffer, sizeof(read_buffer), 0);
+        std::string convertedBuffer(read_buffer);
+        if (bytes_received <= 0) {
+            std::cerr << "Client disconnected or read error \n";
+            break;
+        }
+        std::vector<std::string> tokens = splitRedisCommand(convertedBuffer, "\r\n", 2);
+        for (const std::string& token: tokens) {
+            std::cout << "***" << token << "***" << std::endl;
+        }
+
+        std::string lowercaseCmd = "";
+        for (auto c: tokens[2]) {
+            lowercaseCmd += tolower(c);
+        }
+        std::cout << "***" << lowercaseCmd << "***" << std::endl;
+
+        if (lowercaseCmd == "ping") {
+            const char *pongResp = "+PONG\r\n";
+            send(client_fd, pongResp, strlen(pongResp), 0);
+
+        } else if (lowercaseCmd == "echo") {
+            std::string echoResp = tokens[3] + "\r\n" + tokens[4] + "\r\n";
+            send(client_fd, echoResp.data(), echoResp.length(), 0);
+        }
+    }
+    close(client_fd);
+}
+
+std::vector<std::string> splitRedisCommand(std::string input, std::string separator, int separatorLength ) {
+    // 1.: *x = x number of components, command, command + args etc
+    // 2.: $x = x length command
+    // 3.: command
+    // 4?: $x = x length of argument
+    // 5?: argument/s
+    std::size_t foundSeparator = input.find(separator);
+    std::vector<std::string> result;
+
+    if (foundSeparator == std::string::npos) {
+        result.push_back(input);
+    }
+
+    while (foundSeparator != std::string::npos) {
+        std::string splitOccurrence = input.substr(0, foundSeparator);
+        result.push_back(splitOccurrence);
+        input = input.substr(foundSeparator + separatorLength, input.length()-foundSeparator+separatorLength);
+        foundSeparator = input.find(separator);
+    }
+
+    return result;
 }
