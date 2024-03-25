@@ -7,6 +7,30 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <thread>
+#include <vector>
+
+const int PORT = 6379;
+
+void handle_conn(int client_fd) {
+    char read_buffer[1024] = {0};
+    const char *pong = "+PONG\r\n";
+
+    while (true) {
+        ssize_t bytes_received = recv(client_fd, read_buffer, sizeof(read_buffer), 0);
+        if (bytes_received < 0) {
+            std::cerr << "Error receiving data from client \n";
+            break;
+        } else if (bytes_received == 0) {
+            std::cerr << "Connection closed by client \n";
+            break;
+        } else {
+            // Send back PONG every time
+            send(client_fd, pong, strlen(pong), 0);
+        }
+    }
+    close(client_fd);
+}
 
 int main(int argc, char **argv) {
 
@@ -41,39 +65,30 @@ int main(int argc, char **argv) {
      return 1;
    }
 
-   struct sockaddr_in client_addr;
-   int client_addr_len = sizeof(client_addr);
-
+   std::cout << "Listening at " << PORT << "." << std::endl;
    std::cout << "Waiting for a client to connect...\n";
+   std::vector<std::thread> threads;
 
-   int client = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-   std::cout << "Client connected\n";
-   
-   const char *pong = "+PONG\r\n";
-   
-   while (true) {
-       char read_buffer[1024];
-       ssize_t bytes_received = recv(client, read_buffer, sizeof(read_buffer), 0);
-       if (bytes_received < 0) {
-           std::cerr << "Error receiving data from client \n";
-           break;
-       } else if (bytes_received == 0) {
-           std::cerr << "Connection closed by client \n";
-           break;
-       } else {
-           // Send back PONG every time
-           send(client, pong, strlen(pong), 0);
+    while (true) {
+       struct sockaddr_in client_addr;
+       int client_addr_len = sizeof(client_addr);
+       int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+       if (client_fd < 0) {
+           std::cerr << "Can't accept connection...\n";
+           continue;
        }
+
+       std::cout << "Client connected | " << client_fd << std::endl;
+       std::thread th1(handle_conn, client_fd);
+       threads.push_back(std::move(th1));
+       std::cout << "End of single connection loop " << std::endl;
+
+       for (auto &th: threads) {
+           th.join();
+       }
+       std::cout << "End of global loop " << std::endl;
    }
-           
 
-   char buffer[1024] = {0};
-   read(client, buffer, 1024);
-
-   if (memcmp(buffer, "*1\r\n$4\r\nping\r\n", 15) == 0) {
-       send(client, "+PONG\r\n", 7, 0);
-   }
-   close(server_fd);
-
-   return 0;
+    close(server_fd);
+    return 0;
 }
