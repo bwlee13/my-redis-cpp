@@ -74,7 +74,6 @@ int main(int argc, char **argv) {
            continue;
        }
 
-       std::cout << "Client connected | " << client_fd << std::endl;
        std::thread th1(handle_conn, client_fd);
        threads.push_back(std::move(th1));
        std::cout << "End of single connection loop " << std::endl;
