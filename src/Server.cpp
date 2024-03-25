@@ -9,7 +9,8 @@
 #include <netdb.h>
 
 int main(int argc, char **argv) {
-  std::cout << "Logs from your program will appear here!\n";
+
+    std::cout << "Logs from your program will appear here!\n";
 
    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
    if (server_fd < 0) {
@@ -45,10 +46,16 @@ int main(int argc, char **argv) {
 
    std::cout << "Waiting for a client to connect...\n";
 
-   accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+   int client = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
    std::cout << "Client connected\n";
 
+   char buffer[1024] = {0};
+   read(client, buffer, 1024);
+
+   if (memcmp(buffer, "ping", 15) == 0) {
+       send(client, "+PONG\r\n", 7, 0);
+   }
    close(server_fd);
 
-  return 0;
+   return 0;
 }
