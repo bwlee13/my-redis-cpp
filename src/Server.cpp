@@ -63,28 +63,21 @@ int main(int argc, char **argv) {
 
    std::cout << "Listening at " << PORT << "." << std::endl;
    std::cout << "Waiting for a client to connect...\n";
+    struct sockaddr_in client_addr;
+    int client_addr_len = sizeof(client_addr);
+
    std::vector<std::thread> threads;
 
-    while (true) {
-       struct sockaddr_in client_addr;
-       int client_addr_len = sizeof(client_addr);
+    while(true) {
        int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
        if (client_fd < 0) {
            std::cerr << "Can't accept connection...\n";
            continue;
        }
 
-       std::thread th1(handle_conn, client_fd);
-       threads.push_back(std::move(th1));
+       threads.push_back(std::thread(handle_conn, client_fd));
        std::cout << "End of single connection loop " << std::endl;
    }
 
-    for (auto &th: threads) {
-        th.join();
-    }
-
-    std::cout << "End of global loop " << std::endl;
-
-    close(server_fd);
     return 0;
 }
