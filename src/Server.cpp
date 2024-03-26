@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <thread>
 #include <vector>
+#include <algorithm>
 #include "RedisParser.cpp"
 
 const int PORT = 6379;
