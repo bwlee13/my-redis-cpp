@@ -16,6 +16,8 @@ const int PORT = 6379;
 //std::ostream& writeString(std::ostream& out, std::string const& s);
 void handle_conn(int client_fd);
 std::vector<std::string> splitRedisCommand(std::string input, std::string separator, int separatorLength);
+std::unordered_map<std::string, std::string> RedisParser::store = {};
+
 
 int main(int argc, char** argv) {
 
